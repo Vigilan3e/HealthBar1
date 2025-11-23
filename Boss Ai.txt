@@ -1,0 +1,81 @@
+using UnityEngine;
+using UnityEngine.AI;
+
+public class BossAI : MonoBehaviour
+{
+    public float detectionRange = 20f;
+    public float attackRange = 3f;
+
+    public int maxHP = 5000;
+    private int currentHP;
+
+    public NavMeshAgent agent;
+    public Transform player;
+    public Animator anim;
+
+    private bool isDead = false;
+    private bool isAttacking = false;
+
+    void Start()
+    {
+        currentHP = maxHP;
+    }
+
+    void Update()
+    {
+        if (isDead) return;
+
+        float dist = Vector3.Distance(transform.position, player.position);
+
+        // ตรวจจับผู้เล่น
+        if (dist <= detectionRange)
+        {
+            // ไล่ผู้เล่น
+            if (dist > attackRange && !isAttacking)
+            {
+                agent.isStopped = false;
+                agent.SetDestination(player.position);
+                anim.SetBool("Run", true);
+            }
+            else
+            {
+                // โจมตี
+                if (!isAttacking)
+                    StartCoroutine(DoAttack());
+            }
+        }
+        else
+        {
+            anim.SetBool("Run", false);
+            agent.isStopped = true;
+        }
+    }
+
+    System.Collections.IEnumerator DoAttack()
+    {
+        isAttacking = true;
+        agent.isStopped = true;
+        anim.SetTrigger("Attack1");
+
+        yield return new WaitForSeconds(2f); 
+        isAttacking = false;
+    }
+
+    public void TakeDamage(int dmg)
+    {
+        if (isDead) return;
+
+        currentHP -= dmg;
+        anim.SetTrigger("Hit");
+
+        if (currentHP <= 0)
+            Die();
+    }
+
+    void Die()
+    {
+        isDead = true;
+        anim.SetTrigger("Death");
+        agent.isStopped = true;
+    }
+}
